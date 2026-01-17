@@ -4,7 +4,7 @@ Kinovod Auto-Domain Redirector
 This module provides an asynchronous domain availability checker for kinovod*.pro.
 
 Key features:
-- Checks the availability of domains for today and up to 5 days back.
+- Checks the availability of domains for today and up to 10 days back.
 - Uses aiohttp + asyncio to perform all HTTP checks concurrently for maximum speed.
 - Automatically selects the most recent working domain.
 - Caches the discovered working URL for the lifetime of the process to avoid repeated lookups.
@@ -80,3 +80,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9999)
+
