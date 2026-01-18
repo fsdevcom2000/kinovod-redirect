@@ -201,8 +201,9 @@ project/
         
 2. All domains are checked **simultaneously** using asynchronous requests.
     
-3. The first working domain (HTTP 200) is selected.
+3. The first working domain is selected.
     
 4. If no domain is available, the user sees a styled error page.
+
 
 
