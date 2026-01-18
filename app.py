@@ -4,7 +4,7 @@ Kinovod Auto-Domain Redirector
 This module provides an asynchronous domain availability checker for kinovod*.pro.
 
 Key features:
-- Checks the availability of domains for today and up to 10 days back.
+- Checks the availability of domains for today and up to 5 days back.
 - Uses aiohttp + asyncio to perform all HTTP checks concurrently for maximum speed.
 - Automatically selects the most recent working domain.
 - Integrates with Flask: users are redirected to the first available domain or shown an error page.
@@ -19,6 +19,8 @@ from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
+MAX_LOGS = 100
+
 # In-memory log storage
 logs = []
 
@@ -31,6 +33,10 @@ def log_event(event_type, message, extra=None):
         "message": message,
         "extra": extra or {}
     })
+    # Clear log
+    if len(logs) > MAX_LOGS: 
+        del logs[:-MAX_LOGS] # clear all except last N
+
 
 
 def get_date_shift(days_shift: int) -> str:
