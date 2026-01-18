@@ -7,77 +7,137 @@ Key features:
 - Checks the availability of domains for today and up to 10 days back.
 - Uses aiohttp + asyncio to perform all HTTP checks concurrently for maximum speed.
 - Automatically selects the most recent working domain.
-- Caches the discovered working URL for the lifetime of the process to avoid repeated lookups.
 - Integrates with Flask: users are redirected to the first available domain or shown an error page.
 """
 
 import datetime
 import asyncio
 import aiohttp
-from flask import Flask, redirect, render_template
+from flask import Flask, render_template, jsonify
+
+
 
 app = Flask(__name__)
 
-# Cache the discovered working URL for the lifetime of the process
-cached_url = None
+# In-memory log storage
+logs = []
+
+
+def log_event(event_type, message, extra=None):
+    """Append structured log entry."""
+    logs.append({
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "event": event_type,
+        "message": message,
+        "extra": extra or {}
+    })
 
 
 def get_date_shift(days_shift: int) -> str:
-    """Return a date string (DDMMYY) shifted by N days from today."""
     target_date = datetime.datetime.today() - datetime.timedelta(days=days_shift)
     return target_date.strftime("%d%m%y")
 
 
 async def check_url(session, url):
-    """Check if the given URL is accessible (HTTP 200)."""
+    """Check URL: first verify status 200, then try to read at least 30 KB of body."""
+    MIN_SIZE = 30 * 1024  # Content size: minimum 30 KB
+
     try:
-        async with session.get(url, timeout=3) as resp:
-            return url if resp.status == 200 else None
-    except:
+        # 1. Fast status check (timeout 7 sec)
+        async with session.get(url, timeout=7) as resp:
+            if resp.status != 200:
+                log_event("check", f"{url} returned non-200", {"status": resp.status})
+                return None
+
+            size = 0
+
+            # 2. Read body with timeout via wait_for
+            async def read_body():
+                nonlocal size
+                async for chunk in resp.content.iter_chunked(4096):
+                    size += len(chunk)
+                    if size >= MIN_SIZE:
+                        return True
+                return False
+
+            try:
+                ok = await asyncio.wait_for(read_body(), timeout=3)
+            except Exception as e:
+                log_event(
+                    "error",
+                    f"Timeout while reading body from {url}",
+                    {"error": repr(e), "size_bytes": size}
+                )
+                return None
+
+            if ok:
+                log_event(
+                    "check",
+                    f"{url} accepted: content size OK",
+                    {"size_bytes": size}
+                )
+                return url
+
+            log_event(
+                "check",
+                f"{url} rejected: content too small",
+                {"size_bytes": size}
+            )
+            return None
+
+    except Exception as e:
+        log_event("error", f"Error checking {url}", {"error": repr(e)})
         return None
 
 
 async def find_available_domain():
-    """Find the first accessible domain from today up to 5 days back."""
-    global cached_url
-
-    # Return cached result immediately if previously found
-    if cached_url:
-        return cached_url
-
     base = "http://kinovod{}.pro"
 
-    # Generate list of URLs for the last 6 days (0 = today)
     urls = [
         base.format(get_date_shift(shift))
         for shift in range(0, 6)
     ]
 
-    # Perform all checks concurrently
+    log_event("start_check", "Starting domain scan", {"urls": urls})
+
     async with aiohttp.ClientSession() as session:
         tasks = [check_url(session, url) for url in urls]
         results = await asyncio.gather(*tasks)
 
-    # Return the first available URL (most recent)
     for result in results:
         if result:
-            cached_url = result
+            log_event("domain_found", "Working domain found", {"url": result})
             return result
 
+    log_event("domain_not_found", "No working domains found")
     return None
 
 
+# --- ROUTES ----
+
 @app.route('/')
 def index():
-    """Main route: redirect to the first available domain or show error page."""
+    return render_template("checking.html")
+
+
+@app.route('/check')
+def check():
     url = asyncio.run(find_available_domain())
-
     if url:
-        return redirect(url)
+        return jsonify({"ok": True, "url": url})
+    return jsonify({"ok": False})
 
+
+@app.route('/error')
+def error_page():
     return render_template("error.html")
+
+
+@app.route('/data')
+def data():
+    """Return logs in JSON format."""
+    return jsonify(logs)
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9999)
-

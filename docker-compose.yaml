@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  redirector:
+    build: .
+    container_name: kinovod-redirect
+    ports:
+      - "9999:9999"
+    restart: always
