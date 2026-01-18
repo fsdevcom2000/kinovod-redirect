@@ -102,6 +102,16 @@ project/
     
 4. Если ничего не найдено — показывается страница ошибки.
 
+
+
+## 🐳 Docker
+
+
+```
+docker compose up -d --build
+
+```
+
 ---
 
 # Kinovod Auto-Domain Redirector
@@ -204,6 +214,15 @@ project/
 3. The first working domain is selected.
     
 4. If no domain is available, the user sees a styled error page.
+
+
+## 🐳 Docker
+
+
+```
+docker compose up -d --build
+
+```
 
 
 
