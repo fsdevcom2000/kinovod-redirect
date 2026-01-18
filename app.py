@@ -8,6 +8,10 @@ Key features:
 - Uses aiohttp + asyncio to perform all HTTP checks concurrently for maximum speed.
 - Automatically selects the most recent working domain.
 - Integrates with Flask: users are redirected to the first available domain or shown an error page.
+
+Author: fsdevcom2000
+URL: https://github.com/fsdevcom2000/kinovod-redirect
+
 """
 
 import datetime
@@ -67,7 +71,7 @@ async def check_url(session, url):
                 return False
 
             try:
-                ok = await asyncio.wait_for(read_body(), timeout=3)
+                ok = await asyncio.wait_for(read_body(), timeout=5)
             except Exception as e:
                 log_event(
                     "error",
