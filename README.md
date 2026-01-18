@@ -15,6 +15,8 @@
 
 Скачал -> запустил -> смотришь кино.
 
+Проект постоянно крутится на https://kv.mpgw.ru
+
 ## 🚀 Возможности
 
 - Асинхронная проверка доменов
@@ -202,4 +204,5 @@ project/
 3. The first working domain (HTTP 200) is selected.
     
 4. If no domain is available, the user sees a styled error page.
+
 
