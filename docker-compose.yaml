@@ -7,3 +7,8 @@ services:
     ports:
       - "9999:9999"
     restart: always
+
+    deploy:
+      resources:
+        limits:
+          memory: 256M
