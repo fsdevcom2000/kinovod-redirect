@@ -143,11 +143,11 @@ def error_page():
     return render_template("error.html")
 
 
-@app.route('/data')
+@app.route('/log')
 def data():
     """Return logs in JSON format."""
     return jsonify(logs)
-
+    
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9999)
